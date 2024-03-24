@@ -1,0 +1,75 @@
+const int trigPin = 7;
+const int echoPin = 6;
+unsigned long startTime = 0;
+unsigned long endTime = 0;
+float timetaken = 0;
+bool latch = false;
+int val;
+int lap = 0;
+bool carInSensorRange = false;
+
+void setup()
+{
+  pinMode(trigPin, OUTPUT); // transmit
+  pinMode(echoPin, INPUT);  // receive
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  find();
+  unsigned long currentTime = millis();
+
+  if (val == HIGH && !latch && !carInSensorRange)
+  {
+    if (startTime != 0)
+    { timetaken=0;
+      endTime = millis();
+      timetaken = endTime - startTime;
+      startTime = 0;
+      endTime = 0;
+    }
+    startTime = millis();
+    latch = true;
+    Serial.println("start");
+    if (timetaken > 0)
+    {
+      Serial.print("LAP number:  ");
+      Serial.println(lap);
+      Serial.print("Timetaken:  ");
+      Serial.println(timetaken / 1000);
+    }
+    lap++;
+  }
+
+  if (val == LOW && latch)
+  {
+    latch = false;
+    carInSensorRange = true; // Car was detected in the sensor range
+  }
+  else if (val == HIGH && carInSensorRange)
+  {
+    carInSensorRange = false; // Car has moved out of the sensor range
+  }
+}
+
+void find()
+{
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  long duration = pulseIn(echoPin, HIGH);
+  //long distance = duration * 0.034 / 2;  
+  float speedOfSound = 343.0;
+  long distance = (duration * speedOfSound) / (2 * 10000);
+  if (distance <= 0 || distance >= 400)
+  {
+    val = LOW;
+  }
+  else
+  {
+    val = HIGH;
+  }
+}
